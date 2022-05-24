@@ -43,7 +43,7 @@ int w;
 uint64_t permute(int iArr[], int i2, uint64_t j2);
 void create_subkeys(uint64_t j2, uint64_t jArr[], int i2);
 uint64_t encode_block(uint64_t jArr[], uint64_t j2);
-byte *decrypt(byte bArr[], byte bArr2[]);
+int *decrypt(byte bArr[], byte bArr2[]);
 
 
 

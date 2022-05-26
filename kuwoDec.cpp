@@ -1,10 +1,9 @@
-﻿// kuwoDec.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+// kuwoDec.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
 
 #include <iostream>
-
 #include <inttypes.h>
-
+#include <stdlib.h>
 #include "b64.h"
 
 typedef unsigned char byte;
@@ -40,12 +39,119 @@ int u;
 int v;
 int w;
 
+byte f4714c[128] = { 0 };
+byte f4713b[64] = { 0 };
+
+
 uint64_t permute(int iArr[], int i2, uint64_t j2);
 void create_subkeys(uint64_t j2, uint64_t jArr[], int i2);
 uint64_t encode_block(uint64_t jArr[], uint64_t j2);
 int decrypt(byte bArr[], byte bArr2[], byte decData[]);
 
+void init() {
+    char c2 = 'A';
+    int i = 0;
+    while (c2 <= 'Z') {
+        f4713b[i] = c2;
+        c2 = (char)(c2 + 1);
+        i++;
+    }
+    char c3 = 'a';
+    while (c3 <= 'z') {
+        f4713b[i] = c3;
+        c3 = (char)(c3 + 1);
+        i++;
+    }
+    char c4 = '0';
+    while (c4 <= '9') {
+        f4713b[i] = c4;
+        c4 = (char)(c4 + 1);
+        i++;
+    }
+    f4713b[i] = '+';
+    f4713b[i + 1] = '/';
+    for (int i2 = 0; i2 < 128; i2++) {
+        f4714c[i2] = -1;
+    }
+    for (int i3 = 0; i3 < 64; i3++) {
+        f4714c[f4713b[i3]] = (byte)i3;
+    }
 
+
+}
+
+byte *b64Decode(char cArr[]) {
+    int i;
+    char c2;
+    int i2;
+    int length = strlen(cArr);
+    if (length % 4 == 0) {
+        while (length > 0 && cArr[length - 1] == '=') {
+            length--;
+        }
+        int i3 = (length * 3) / 4;
+        //byte[] bArr = new byte[i3];
+        byte* bArr = (byte*)malloc(i3);
+        if (bArr == NULL) {
+            exit;
+        }
+        memset(bArr, 0, i3);
+        int i4 = 0;
+        for (int i5 = 0; i5 < length; i5 = i) {
+            int i6 = i5 + 1;
+            char c3 = cArr[i5];
+            int i7 = i6 + 1;
+            char c4 = cArr[i6];
+            char c5 = 'A';
+            if (i7 < length) {
+                i = i7 + 1;
+                c2 = cArr[i7];
+            }
+            else {
+                i = i7;
+                c2 = 'A';
+            }
+            if (i < length) {
+                int i8 = i + 1;
+                char c6 = cArr[i];
+                i = i8;
+                c5 = c6;
+            }
+            if (c3 > 127 || c4 > 127 || c2 > 127 || c5 > 127) {
+                printf("Illegal character in Base64 encoded data.");
+            }
+            byte b2 = f4714c[c3];
+            byte b3 = f4714c[c4];
+            byte b4 = f4714c[c2];
+            byte b5 = f4714c[c5];
+            if (b2 < 0 || b3 < 0 || b4 < 0 || b5 < 0) {
+                printf("Illegal character in Base64 encoded data.");
+            }
+            int i9 = (b2 << 2) | (b3 >> 4);
+            int i10 = ((b3 & 15) << 4) | (b4 >> 2);
+            int i11 = ((b4 & 3) << 6) | b5;
+            int i12 = i4 + 1;
+            bArr[i4] = (byte)i9;
+            if (i12 < i3) {
+                i2 = i12 + 1;
+                bArr[i12] = (byte)i10;
+            }
+            else {
+                i2 = i12;
+            }
+            if (i2 < i3) {
+                i4 = i2 + 1;
+                bArr[i2] = (byte)i11;
+            }
+            else {
+                i4 = i2;
+            }
+        }
+        return bArr;
+    }
+
+
+}
 
 uint64_t permute(int iArr[], int i2, uint64_t j2) {
     uint64_t j3 = 0;
@@ -138,7 +244,7 @@ uint64_t encode_block(uint64_t jArr[], uint64_t j2) {
 
 int decrypt(byte bArr[], byte bArr2[], byte decData[]) {
     //byte bArr3[] = {0};
-    int length = strlen((const char*)bArr);
+    int length = strlen((const char*)bArr)*4;
     int length2 = strlen((const char*)bArr2);
     uint64_t jArr[16] = { 0 };
     uint64_t j2 = 0;
@@ -150,7 +256,13 @@ int decrypt(byte bArr[], byte bArr2[], byte decData[]) {
     }
     create_subkeys(j2, jArr, 1);
     int i4 = length / 8;
-    uint64_t jArr2[35] = { 0 };
+    uint64_t *jArr2 = (uint64_t*)malloc(sizeof(uint64_t) * i4);
+    
+    if (jArr2 == NULL) {
+        return 1;
+    }
+    memset(jArr2, 0, sizeof(uint64_t) * i4);
+    //uint64_t jArr2[1024] = { 0 };
     //memcpy(jArr2, 0, i4);
     for (int i5 = 0; i5 < i4; i5++) {
         for (int i6 = 0; i6 < 8; i6++) {
@@ -158,11 +270,18 @@ int decrypt(byte bArr[], byte bArr2[], byte decData[]) {
         }
     }
     //long[] jArr3 = new long[i4];
-    uint64_t jArr3[35] = { 0 };
+    uint64_t *jArr3 = (uint64_t*)malloc(sizeof(uint64_t)*i4);
+    
+    if (jArr3 == NULL) {
+        return 1;
+    }
+    memset(jArr3, 0, sizeof(uint64_t) * i4);
+    //uint64_t jArr3[1024] = { 0 };
     //memcpy(jArr3, 0, i4);
     for (int i7 = 0; i7 < i4; i7++) {
         jArr3[i7] = encode_block(jArr, jArr2[i7]);
     }
+    free(jArr2);
     //bArr3 = new byte[(i4 * 8)];
     //memcpy(bArr3, 0, 35*8);
     for (int i8 = 0; i8 < i4; i8++) {
@@ -170,7 +289,7 @@ int decrypt(byte bArr[], byte bArr2[], byte decData[]) {
             decData[(i8 * 8) + i9] = (byte)((int)(255 & (jArr3[i8] >> (i9 * 8))));
         }
     }
-    
+    free(jArr3);   
     return 0;
 }
 
@@ -179,11 +298,19 @@ int main()
     
     unsigned char* key = (unsigned char*)"kwks&@69";
     const char *encData = "Sy1Jlx5q/p4fi36+xHQg5OYn+BlbKjAk14xTvFn//Gx75jE6fBfkwkc+05OaGXLCxeionnSus+kcjOWpnXPmeT08HGZ/E1OytmJRoTx3AqdZKMxwev516Jknlyt/kXhKaG1lB0+iFSZQUwebv59loiUdoRHx1vRhzHfSncvyegOD6g3Sc3ISHM1ZyJYsUATyNUQGO5e6HRuJh2VoYFMb8Oa8Wk/T/Y3/Z02WGpC3/odbkud/4+TGbEJUtA/R2oHWq6N35tQXisSRZLAzqwT6Wg1r7dPZbBCdIfz8YmmUBmYk6rfNvKF/MQ==";
+    //init();
     unsigned char* b64dec = b64_decode(encData, strlen(encData));
-    byte *decData = (byte*)malloc(1024);
+    //unsigned char* b64dec = b64Decode((char *)encData);
+    byte *decData = (byte*)malloc(strlen((const char*)b64dec) * 4);
+    if (decData == NULL) {
+        return 1;
+    }
+    memset(decData, 0, strlen((const char*)b64dec) * 4);
     decrypt(b64dec, key, decData);
     printf("%s\n", (char*)decData);
+
     free(decData);
+   
     return 0;
 
 
